@@ -82,6 +82,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
           Container(
             alignment: Alignment.topLeft,
+            padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[

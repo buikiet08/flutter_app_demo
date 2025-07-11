@@ -188,7 +188,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       builder: (context, ref, _) {
         final isActive = ref.watch(activeToolProvider);
         final isActiveButtonTool = ref.watch(activeToolButtonProvider);
-        final isActiveTSAH = ref.watch(traceDataProvider);
+        final isActiveTSAH = ref.watch(traceDataProvider) ?? ref.watch(traceHistoryDataProvider);
         // Listen to tool changes without triggering rebuilds
         ref.listen<ToolType?>(activeToolButtonProvider, (previous, next) {
           if (next != null) {
@@ -496,7 +496,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
           left: 0,
           right: 0,
           child: Container(
-            padding: const EdgeInsets.all(0),
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 0.0),
             color: Theme.of(context).canvasColor.withOpacity(0.9),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -531,20 +531,9 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                         });
                       },
                     ),
-                    // ElevatedButton(
-                    //   style: const ButtonStyle(
-                    //     backgroundColor: WidgetStatePropertyAll<Color>(Colors.white),
-                    //     shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
-                    //       RoundedRectangleBorder(
-                    //         borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                    //       ),
-                    //     ),
-                    //   ),
-                    //   onPressed: () {},
-                    //   child: Text('Xóa', style: const TextStyle(fontSize: 14)),
-                    // ),
                     // Button để toggle editing toolbar
                     IconButton(
+                      iconSize: 30,
                       onPressed: () =>
                           setState(() => _showEditToolbar = !_showEditToolbar),
                       icon: Icon(
@@ -576,6 +565,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
             children: [
               Column(
                 spacing: 1,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Tooltip(
                     message: 'Setings',
@@ -631,17 +621,9 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                     message: 'Clear all graphics',
                     child: ElevatedButton(
                       onPressed: () => clearAllGraphicsWithRef(ref),
-                      child: const Icon(Icons.clear_all),
+                      child: Text("Clean all", style: TextStyle(color: Colors.red,)),
                     ),
                   ),
-                  // // A button to remove last graphic
-                  // Tooltip(
-                  //   message: 'Remove last graphic',
-                  //   child: ElevatedButton(
-                  //     onPressed: () => removeLastGraphic(),
-                  //     child: const Icon(Icons.undo),
-                  //   ),
-                  // ),
                 ],
               ),
             ],
@@ -869,7 +851,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
           left: 0,
           right: 0,
           child: Container(
-            padding: const EdgeInsets.only(top: 0, left: 8, right: 8, bottom: 0),
+            padding: const EdgeInsets.only(top: 0, left: 16, right: 16, bottom: 0),
             color: Theme.of(context).canvasColor.withOpacity(0.9),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -882,21 +864,21 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                         backgroundColor: WidgetStatePropertyAll<Color>(Colors.green),
                         shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
                           RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
                           ),
                         ),
                       ),
                       onPressed: () async {
                         await buildBottomSheetSettings(context, ref);
                       },
-                      child: Text('Tài sản', style: const TextStyle(fontSize: 14, color: Colors.white)),
+                      child: Text('Tài sản ảnh hưởng', style: const TextStyle(fontSize: 14, color: Colors.white)),
                     ),
                     ElevatedButton(
                       style: const ButtonStyle(
                         backgroundColor: WidgetStatePropertyAll<Color>(Colors.blueAccent),
                         shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
                           RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
                           ),
                         ),
                       ),
@@ -908,7 +890,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                         backgroundColor: WidgetStatePropertyAll<Color>(Colors.red),
                         shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
                           RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
                           ),
                         ),
                       ),
@@ -1121,6 +1103,16 @@ class _MapViewWidgetState extends State<MapViewWidget> {
     if (map == null) return;
 
     final dataTrace = ref.watch(traceDataProvider);
+    final dataHistory = ref.watch(traceHistoryDataProvider);
+
+    // Nếu trace có data → ưu tiên trace
+    final data = dataTrace ?? dataHistory;
+    final isHistory = dataTrace == null && dataHistory != null;
+
+    // ignore: unused_local_variable
+    List<Map<String, dynamic>> vanFields = [];
+    // ignore: unused_local_variable
+    List<Map<String, dynamic>> dhkhFields = [];
 
     List<Map<String, dynamic>> vanDieuKhienData = [];
     List<Map<String, dynamic>> dongHoData = [];
@@ -1130,51 +1122,107 @@ class _MapViewWidgetState extends State<MapViewWidget> {
         if (layer is FeatureLayer) {
           String ids = '';
           final query = QueryParameters();
+
           switch (layer.name) {
             case 'Van điều khiển':
-              ids = (dataTrace?['VanAnhHuong'] ?? []).join(',');
+              if (isHistory) {
+                final idList = (data?['VanAnhHuong'] ?? [])
+                    .map((dataId) => dataId['attributes']['IDTaiSan'])
+                    .where((id) => id != null && id.toString().isNotEmpty)
+                    .map((id) => "'$id'")
+                    .join(',');
+                if (idList.isEmpty) continue;
+                query.whereClause = 'GlobalID IN ($idList)';
+              } else {
+                ids = (data?['VanAnhHuong'] ?? []).join(',');
+                if (ids.isEmpty) continue;
+                query.whereClause = 'OBJECTID IN ($ids)';
+              }
               break;
+
             case 'Đồng hồ khách hàng':
-              ids = (dataTrace?['DongHoKhachHang'] ?? []).join(',');
+              if (isHistory) {
+                final idList = (data?['DongHoKhachHang'] ?? [])
+                    .map((dataId) => dataId['attributes']['IDTaiSan'])
+                    .where((id) => id != null && id.toString().isNotEmpty)
+                    .map((id) => "'$id'")
+                    .join(',');
+                if (idList.isEmpty) continue;
+                query.whereClause = 'GlobalID IN ($idList)';
+              } else {
+                ids = (data?['DongHoKhachHang'] ?? []).join(',');
+                if (ids.isEmpty) continue;
+                query.whereClause = 'OBJECTID IN ($ids)';
+              }
               break;
+
             default:
               continue;
           }
 
-          if (ids.isEmpty) continue;
-
-          query.whereClause = 'OBJECTID IN ($ids)';
-
+          // Query và map data
           final result = await layer.featureTable?.queryFeatures(query);
           final features = result?.features() ?? [];
+          final fields = layer.featureTable?.fields ?? [];
+
+          final fieldList = fields
+              .map((f) => {
+                    'name': f.name,
+                    'alias': f.alias,
+                    'type': f.type.toString(),
+                    'domain': f.domain,
+                  })
+              .toList();
 
           if (layer.name == 'Van điều khiển') {
             vanDieuKhienData = features.map((f) => f.attributes).toList();
+            vanFields = fieldList;
           } else if (layer.name == 'Đồng hồ khách hàng') {
             dongHoData = features.map((f) => f.attributes).toList();
+            dhkhFields = fieldList;
           }
         }
       }
     }
-
     // Gọi hiển thị modal
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        return BottomSheetSettings(
-          onCloseIconPressed: () => setState(() => _showEditToolbar = false),
-          settingsWidgets: (context) => [
-            buildTraceResultTabs(vanDieuKhienData, dongHoData),
-          ],
-        );
-      },
+      isDismissible: true, // Bấm ra ngoài sẽ đóng
+      enableDrag: true, 
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.8,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: buildTraceResultTabs(
+                    vanDieuKhienData,
+                    dongHoData,
+                    vanFields,
+                    dhkhFields,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
   Widget buildTraceResultTabs(
     List<Map<String, dynamic>> vanDieuKhienData,
     List<Map<String, dynamic>> dongHoData,
+    List<Map<String, dynamic>> vanFields,
+    List<Map<String, dynamic>> dhkhFields,
   ) {
     return DefaultTabController(
       length: 2,
@@ -1186,12 +1234,11 @@ class _MapViewWidgetState extends State<MapViewWidget> {
               Tab(text: 'Đồng hồ khách hàng'),
             ],
           ),
-          SizedBox(
-            height: 400, // hoặc tính toán theo context
+          Expanded(
             child: TabBarView(
               children: [
-                buildDataTable(vanDieuKhienData),
-                buildDataTable(dongHoData),
+                buildDataCards(vanDieuKhienData, vanFields),
+                buildDataCards(dongHoData, dhkhFields),
               ],
             ),
           ),
@@ -1199,34 +1246,55 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       ),
     );
   }
-  Widget buildDataTable(List<Map<String, dynamic>> data) {
+  Widget buildDataCards(List<Map<String, dynamic>> data, List<Map<String, dynamic>> fields) {
     if (data.isEmpty) {
       return const Center(child: Text('Không có dữ liệu'));
     }
 
-    // Lấy header từ keys của phần tử đầu tiên
-    final columns = data.first.keys.toList();
+    String getFields(String key) {
+      final field = fields.toList().where((i) => i['name'] == key).first;
+      return field['alias'] ?? key;
+    }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: columns
-            .map((key) => DataColumn(label: Text(key, style: const TextStyle(fontWeight: FontWeight.bold))))
-            .toList(),
-        rows: data
-            .map(
-              (row) => DataRow(
-                cells: columns
-                    .map(
-                      (key) => DataCell(Text('${row[key]}')),
-                    )
-                    .toList(),
-              ),
-            )
-            .toList(),
-      ),
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      itemCount: data.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final row = data[index];
+
+        return Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: row.entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Text('${getFields(entry.key)}:', style: const TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                      Expanded(
+                        flex: 5,
+                        child: Text('${entry.value ?? ''}'),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
     );
   }
+
   // =============================END====================================//
 
   // ==================Clear ket qua======================== //
@@ -1242,7 +1310,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
     _graphicsOverlay.graphics.clear();
     
     // Clear the enhanced geometry data provider
-    ref.read(enhancedGeometryDataProvider.notifier).state = [];
+    ref.read(enhancedGeometryDataProvider.notifier).state = <Map<String, dynamic>>[];
     
     // Clear the list geometry provider
     ref.read(listGeometryProvider.notifier).state = [];

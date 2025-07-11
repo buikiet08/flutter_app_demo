@@ -242,6 +242,14 @@ class HomeController implements ArcGISAuthenticationChallengeHandler {
       final dataOPPIds = features.where((f) => f['attributes']['IDLayer'] == 9);
       final dataONIds = features.where((f) => f['attributes']['IDLayer'] == 10);
 
+      ref.read(traceHistoryDataProvider.notifier).state = {
+        'VanAnhHuong': dataVanIds,
+        'VanDong': dataVanIds,
+        'OngPhanPhoi': dataOPPIds,
+        'OngNganh': dataONIds,
+        'DongHoKhachHang': dataDongHoIds,
+      };
+
       mapViewController.arcGISMap?.operationalLayers.forEach((layer) {
         if (layer is FeatureLayer) {
           final query = QueryParameters();

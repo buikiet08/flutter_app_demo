@@ -41,6 +41,7 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
     ),
     HistoryPage(key: const Key('historyPage'), onSelectTab: _onItemTapped),
     ReportPage(),
+    const Text('Cài đặt')
   ];
 
   void _onItemTapped(int index) {
@@ -69,7 +70,7 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        title: Text(username != null ? 'Hi, $username' : 'ArcGIS App'),
+        title: Text('Điều tiết mạng lưới', style: TextStyle(fontSize: 22),),
         actions: [
           if (username != null)
             IconButton(
@@ -86,12 +87,12 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
           : NavigationBar(
               destinations: const <NavigationDestination>[
                 NavigationDestination(
-                  icon: Icon(Icons.map, size: 20),
+                  icon: Icon(Icons.map_outlined, size: 24),
                   selectedIcon: Icon(Icons.map_outlined, color: Colors.white),
-                  label: 'Home',
+                  label: 'Trang chủ',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.history, size: 20),
+                  icon: Icon(Icons.history, size: 24),
                   selectedIcon: Icon(
                     Icons.history_outlined,
                     color: Colors.white,
@@ -99,12 +100,20 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
                   label: 'Giám sát',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.report, size: 20),
+                  icon: Icon(Icons.chat_rounded, size: 24),
                   selectedIcon: Icon(
-                    Icons.report_outlined,
+                    Icons.chat_rounded,
                     color: Colors.white,
                   ),
                   label: 'Báo cáo',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.settings_outlined, size: 24),
+                  selectedIcon: Icon(
+                    Icons.settings_outlined,
+                    color: Colors.white,
+                  ),
+                  label: 'Cài đặt',
                 ),
               ],
               selectedIndex: _selectedIndex,
@@ -131,8 +140,7 @@ class _DemoBottomAppBar extends ConsumerWidget {
     
     return BottomAppBar(
       height: 60,
-      color: Colors.blueAccent,
-      padding: const EdgeInsets.all(4.0),
+      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
       child: IconTheme(
         data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
         child: Column(
@@ -146,12 +154,14 @@ class _DemoBottomAppBar extends ConsumerWidget {
                   icon: Icons.flag,
                   toolType: ToolType.flag,
                   isActive: activeButton == ToolType.flag,
+                  title: "Flag"
                 ),
                 _buildToolButton(
                   ref: ref,
                   icon: Icons.warning_rounded,
                   toolType: ToolType.barrier,
                   isActive: activeButton == ToolType.barrier,
+                  title: "Barrier"
                 ),
                 _buildOperationButton(
                   ref: ref,
@@ -159,8 +169,15 @@ class _DemoBottomAppBar extends ConsumerWidget {
                   operationType: OperationType.quickOperation,
                   isActive: operationType == OperationType.quickOperation,
                   onPressed: () {
-                    ref.read(operationTypeProvider.notifier).state = OperationType.quickOperation;
+                    final checkType = ref.watch(operationTypeProvider);
+                    if (checkType == OperationType.normalOperation) {
+                      ref.read(operationTypeProvider.notifier).state = OperationType.quickOperation;
+                    } else {
+                      ref.read(operationTypeProvider.notifier).state = OperationType.normalOperation;
+                    }
+                    ref.read(activeToolButtonProvider.notifier).state = ToolType.flag;
                   },
+                  isEnabled: true
                 ),
                 _buildOperationButton(
                   ref: ref,
@@ -181,6 +198,7 @@ class _DemoBottomAppBar extends ConsumerWidget {
                     // Trigger trace operation
                     ref.read(handleTraceTypeProvider.notifier).state = ToolType.flag;
                   },
+                  isEnabled: ref.watch(operationTypeProvider) == OperationType.normalOperation
                 ),
               ],
             ),
@@ -195,15 +213,34 @@ class _DemoBottomAppBar extends ConsumerWidget {
     required IconData icon,
     required ToolType toolType,
     required bool isActive,
+    required String title
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        FloatingActionButton.small(
-          backgroundColor: isActive ? Colors.green : Colors.white,
-          foregroundColor: isActive ? Colors.white : Colors.blueAccent,
-          elevation: isActive ? 6.0 : 2.0,
-          child: Icon(icon),
+        ElevatedButton(
+          style: ButtonStyle(
+            backgroundColor: WidgetStatePropertyAll<Color>(
+              isActive ? Colors.blueAccent : Colors.white,
+            ),
+            foregroundColor: WidgetStatePropertyAll<Color>(
+              isActive ? Colors.white : Colors.blueAccent,
+            ),
+            shape: const WidgetStatePropertyAll<RoundedRectangleBorder>(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8.0)),
+              ),
+            ),
+            padding: const WidgetStatePropertyAll<EdgeInsets>(
+              EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon),
+              Text(title)
+          ]),
           onPressed: () {
             // Toggle the button - if it's already active, deactivate it, otherwise activate it
             if (isActive) {
@@ -222,27 +259,31 @@ class _DemoBottomAppBar extends ConsumerWidget {
     required String label,
     required OperationType operationType,
     required bool isActive,
+    required bool isEnabled,
     required VoidCallback onPressed,
   }) {
-    return ElevatedButton(
-      style: ButtonStyle(
-        backgroundColor: WidgetStatePropertyAll<Color>(
-          isActive ? Colors.green : Colors.white,
-        ),
-        foregroundColor: WidgetStatePropertyAll<Color>(
-          isActive ? Colors.white : Colors.blueAccent,
-        ),
-        shape: const WidgetStatePropertyAll<RoundedRectangleBorder>(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(8.0)),
+    return Opacity(
+    opacity: isEnabled ? 1.0 : 0.5,
+    child: ElevatedButton(
+        style: ButtonStyle(
+          backgroundColor: WidgetStatePropertyAll<Color>(
+            isActive ? Colors.blueAccent : Colors.white,
+          ),
+          foregroundColor: WidgetStatePropertyAll<Color>(
+            isActive ? Colors.white : Colors.blueAccent,
+          ),
+          shape: const WidgetStatePropertyAll<RoundedRectangleBorder>(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8.0)),
+            ),
+          ),
+          padding: const WidgetStatePropertyAll<EdgeInsets>(
+            EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0),
           ),
         ),
-        padding: const WidgetStatePropertyAll<EdgeInsets>(
-          EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0),
-        ),
-      ),
-      onPressed: onPressed,
-      child: Text(label, style: const TextStyle(fontSize: 12)),
+        onPressed: isEnabled ? onPressed : null,
+        child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+      )
     );
   }
 }

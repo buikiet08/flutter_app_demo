@@ -66,3 +66,4 @@ final enhancedGeometryDataProvider = StateProvider<List<Map<String, dynamic>>>(
 
 final handleTraceTypeProvider = StateProvider<ToolType?>((ref) => null);
 final traceDataProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
+final traceHistoryDataProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
