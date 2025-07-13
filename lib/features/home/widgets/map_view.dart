@@ -98,7 +98,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
   // Geometry Editor và các tools
   late GeometryEditor _geometryEditor;
   final _vertexTool = VertexTool();
-  final _reticleVertexTool = ReticleVertexTool();  
+  final _reticleVertexTool = ReticleVertexTool();
   final _graphicsOverlay = GraphicsOverlay();
 
   // UI state variables
@@ -153,19 +153,38 @@ class _MapViewWidgetState extends State<MapViewWidget> {
     // Add graphics overlay to controller
     widget.controller.graphicsOverlays.add(_graphicsOverlay);
   }
+
   void _initializeCustomSymbols() {
     // Flag symbol - màu đỏ với icon flag (tăng size để dễ thấy)
     _flagSymbol = SimpleMarkerSymbol(
       style: SimpleMarkerSymbolStyle.circle,
-      color: const Color.fromARGB(255, 255, 0, 0), // Màu đỏ
+      color: const Color.fromARGB(255, 0, 255, 0), // Màu xanh lá
       size: 20, // Tăng size từ 16 lên 20
-    );    // Warning symbol - màu cam với icon warning
+    ); // Warning symbol - màu cam với icon warning
     _warningSymbol = SimpleMarkerSymbol(
       style: SimpleMarkerSymbolStyle.triangle,
       color: const Color.fromARGB(255, 255, 165, 0), // Màu cam
       size: 20,
     );
   }
+
+  // Future<void> _initializeCustomSymbols() async {
+  //   // Flag symbol từ hình ảnh asset
+  //   _flagSymbol = await PictureMarkerSymbol.withImage(
+  //     await ArcGISImage.fromAsset('assets/flag.png'),
+  //   );
+  //   _flagSymbol.height = 30;
+  //   _flagSymbol.width = 30;
+  //   _flagSymbol.offsetY = 15;
+
+  //   // Warning symbol từ hình ảnh asset
+  //   _warningSymbol = await PictureMarkerSymbol.withImage(
+  //     await ArcGISImage.fromAsset('assets/barrier.png'),
+  //   );
+  //   _warningSymbol.height = 30;
+  //   _warningSymbol.width = 30;
+  //   _warningSymbol.offsetY = 15;
+  // }
 
   void _setupGeometryEditorListeners() {
     _geometryEditor.onCanUndoChanged.listen((canUndo) {
@@ -182,13 +201,15 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       );
     });
   }
+
   @override
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
         final isActive = ref.watch(activeToolProvider);
         final isActiveButtonTool = ref.watch(activeToolButtonProvider);
-        final isActiveTSAH = ref.watch(traceDataProvider) ?? ref.watch(traceHistoryDataProvider);
+        final isActiveTSAH =
+            ref.watch(traceDataProvider) ?? ref.watch(traceHistoryDataProvider);
         // Listen to tool changes without triggering rebuilds
         ref.listen<ToolType?>(activeToolButtonProvider, (previous, next) {
           if (next != null) {
@@ -198,6 +219,21 @@ class _MapViewWidgetState extends State<MapViewWidget> {
             }
           } else {
             // Không có tool nào được chọn - stop editing
+            if (_geometryEditorIsStarted) {
+              _geometryEditor.stop();
+              setState(() {
+                _geometryEditorIsStarted = false;
+                _selectedGraphic = null;
+              });
+            }
+          }
+        });
+
+        ref.listen(activeToolProvider, (previous, next) {
+          if (!next!) {
+            // Không có tool nào được chọn - stop editing
+            // ref.read(traceDataProvider.notifier).state = null;
+            // ref.read(traceHistoryDataProvider.notifier).state = null;
             if (_geometryEditorIsStarted) {
               _geometryEditor.stop();
               setState(() {
@@ -228,16 +264,22 @@ class _MapViewWidgetState extends State<MapViewWidget> {
               child: buildBottomMenu(context),
             ),
             Visibility(
-              visible: _showEditToolbar && isActive == true && isActiveButtonTool != null,
+              visible:
+                  _showEditToolbar &&
+                  isActive == true &&
+                  isActiveButtonTool != null,
               child: buildEditingToolbar(ref),
             ),
             Visibility(
-              visible: _snapSettingsVisible && isActive == true && isActiveButtonTool != null,
+              visible:
+                  _snapSettingsVisible &&
+                  isActive == true &&
+                  isActiveButtonTool != null,
               child: buildSnapSettings(context),
             ),
             Visibility(
               visible: isActiveTSAH != null && isActive == false,
-              child: buildTSAH(context,ref)
+              child: buildTSAH(context, ref),
             ),
             if (widget.overlayLoading)
               Container(
@@ -297,7 +339,8 @@ class _MapViewWidgetState extends State<MapViewWidget> {
         _graphicsOverlaySnapSources.add(sourceSettings);
       }
     }
-  }  // Method để stop và save
+  } // Method để stop và save
+
   void stopAndSave(ref) async {
     if (!_geometryEditorIsStarted) return;
 
@@ -312,10 +355,10 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       } else {
         // If there was no existing graphic, create a new one and add to the graphics overlay.
         final graphic = Graphic(geometry: geometry);
-        
+
         // Apply symbol based on active tool type
         final activeTool = ref.read(activeToolButtonProvider);
-        
+
         switch (activeTool) {
           case ToolType.flag:
             graphic.symbol = _flagSymbol;
@@ -338,17 +381,38 @@ class _MapViewWidgetState extends State<MapViewWidget> {
         try {
           final map = widget.controller.arcGISMap;
           if (map != null && map.operationalLayers.isNotEmpty) {
-            final projectionUrl = 'https://gis.phuwaco.com.vn/server/rest/services/Utilities/Geometry/GeometryServer/project';
-            final tphcmSpatialReferenceMap =  {
-              "wkt": 'PROJCS["TPHCM_VN2000",GEOGCS["GCS_VN_2000",DATUM["D_Vietnam_2000",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",105.75],PARAMETER["Scale_Factor",0.9999],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]',
+            final projectionUrl =
+                'https://gis.phuwaco.com.vn/server/rest/services/Utilities/Geometry/GeometryServer/project';
+            final tphcmSpatialReferenceMap = {
+              "wkt":
+                  'PROJCS["TPHCM_VN2000",GEOGCS["GCS_VN_2000",DATUM["D_Vietnam_2000",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",105.75],PARAMETER["Scale_Factor",0.9999],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]',
             };
-            final tphcmSpatialReference = SpatialReference.fromJson(tphcmSpatialReferenceMap);
+            final tphcmSpatialReference = SpatialReference.fromJson(
+              tphcmSpatialReferenceMap,
+            );
             // Try to find a feature layer at this location (similar to hitTest)
-            // final screenPoint = widget.controller.locationToScreen(mapPoint: geometry);
-            // final identifyResults = await widget.controller.identifyLayers(
-            //   screenPoint: screenPoint,
-            //   tolerance: 22,
-            // );
+            final screenPoint = widget.controller.locationToScreen(
+              mapPoint: geometry,
+            );
+            final identifyResults = await widget.controller.identifyLayers(
+              screenPoint: screenPoint,
+              tolerance: 1,
+            );
+
+            // Tìm layer "Ống phân phối" trong kết quả identify
+            final oppLayerResult = identifyResults.first;
+
+            if (oppLayerResult.layerContent.name != 'Ống phân phối') {
+              // Không chấm trúng vào layer "Ống phân phối"
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Vui lòng chọn đúng vào lớp "Ống phân phối"'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+              return; // Dừng xử lý tại đây
+            }
+
             final projectionResult = await projectPointGeometry(
               projectionUrl,
               geometry.spatialReference!,
@@ -357,7 +421,8 @@ class _MapViewWidgetState extends State<MapViewWidget> {
               ref,
             );
 
-            if (projectionResult != null && projectionResult['geometries'] != null) {
+            if (projectionResult != null &&
+                projectionResult['geometries'] != null) {
               final geometries = projectionResult['geometries'] as List;
               if (geometries.isNotEmpty) {
                 final projectedGeometry = geometries[0];
@@ -382,14 +447,14 @@ class _MapViewWidgetState extends State<MapViewWidget> {
           print("Error in feature identification: $e");
           // Continue with default values and clicked coordinates
         }
-        
+
         // Store additional information in graphic attributes
         graphic.attributes['toolType'] = activeTool.toString().split('.').last;
         graphic.attributes['layerInfo'] = layerInfo;
         graphic.attributes['loaiOng'] = loaiOng;
         graphic.attributes['objectId'] = objectId;
         graphic.attributes['timestamp'] = DateTime.now().millisecondsSinceEpoch;
-        
+
         final enhancedData = <String, dynamic>{
           'geometry': geometry,
           'toolType': activeTool,
@@ -399,13 +464,17 @@ class _MapViewWidgetState extends State<MapViewWidget> {
           'timestamp': DateTime.now().millisecondsSinceEpoch,
           'x': finalX, // Use projected coordinates if available
           'y': finalY, // Use projected coordinates if available
-          'clickedX': geometry.x, // Keep original clicked coordinates for reference
-          'clickedY': geometry.y, // Keep original clicked coordinates for reference
+          'clickedX':
+              geometry.x, // Keep original clicked coordinates for reference
+          'clickedY':
+              geometry.y, // Keep original clicked coordinates for reference
         };
-        
-        ref.read(enhancedGeometryDataProvider.notifier).update(
-          (List<Map<String, dynamic>> state) => [...state, enhancedData],
-        );
+
+        ref
+            .read(enhancedGeometryDataProvider.notifier)
+            .update(
+              (List<Map<String, dynamic>> state) => [...state, enhancedData],
+            );
 
         print("=== Enhanced Data Summary ===");
         print("Tool Type: $activeTool");
@@ -414,30 +483,38 @@ class _MapViewWidgetState extends State<MapViewWidget> {
         print("LoaiOng: $loaiOng");
         print("Final Coordinates: X=$finalX, Y=$finalY");
         print("Clicked Coordinates: X=${geometry.x}, Y=${geometry.y}");
-        print("Enhanced data count: ${ref.read(enhancedGeometryDataProvider).length}");
+        print(
+          "Enhanced data count: ${ref.read(enhancedGeometryDataProvider).length}",
+        );
         print("=============================");
-        
+
         // Add graphic to the graphics overlay
         _graphicsOverlay.graphics.add(graphic);
 
         // Update geometry provider for backward compatibility
-        ref.read(listGeometryProvider.notifier).state = _graphicsOverlay.graphics.map((i) => i.geometry!).toList();
+        ref.read(listGeometryProvider.notifier).state = _graphicsOverlay
+            .graphics
+            .map((i) => i.geometry!)
+            .toList();
 
         // Check if quick operation is enabled and this is a flag
         final operationType = ref.read(operationTypeProvider);
-        if (operationType == OperationType.quickOperation && activeTool == ToolType.flag) {
+        if (operationType == OperationType.quickOperation &&
+            activeTool == ToolType.flag) {
           // Auto trigger trace operation for quick mode
           Future.delayed(const Duration(milliseconds: 500), () {
             ref.read(handleTraceTypeProvider.notifier).state = ToolType.flag;
           });
         }
-        
+
         print("Saved geometry with layer info: $layerInfo, LoaiOng: $loaiOng");
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Đã lưu geometry thành công (${_graphicsOverlay.graphics.length} điểm)'),
+          content: Text(
+            'Đã lưu geometry thành công (${_graphicsOverlay.graphics.length} điểm)',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -488,6 +565,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       }
     }
   }
+
   Widget buildBottomMenu(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
@@ -517,7 +595,10 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                       ],
                       style: SegmentedButton.styleFrom(
                         textStyle: Theme.of(context).textTheme.labelSmall,
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                       ),
                       selected: <ToolMenus>{toolMenusView},
                       onSelectionChanged: (Set<ToolMenus> newSelection) {
@@ -553,7 +634,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       },
     );
   }
-  
+
   Widget buildEditingToolbar(ref) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 60, right: 5),
@@ -603,7 +684,9 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                   Tooltip(
                     message: 'Stop and save edits',
                     child: ElevatedButton(
-                      onPressed: _geometryEditorIsStarted ? () => stopAndSave(ref) : null,
+                      onPressed: _geometryEditorIsStarted
+                          ? () => stopAndSave(ref)
+                          : null,
                       child: const Icon(Icons.save),
                     ),
                   ),
@@ -621,7 +704,10 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                     message: 'Clear all graphics',
                     child: ElevatedButton(
                       onPressed: () => clearAllGraphicsWithRef(ref),
-                      child: Text("Clean all", style: TextStyle(color: Colors.red,)),
+                      child: Text(
+                        "Clean all",
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ),
                   ),
                 ],
@@ -851,7 +937,12 @@ class _MapViewWidgetState extends State<MapViewWidget> {
           left: 0,
           right: 0,
           child: Container(
-            padding: const EdgeInsets.only(top: 0, left: 16, right: 16, bottom: 0),
+            padding: const EdgeInsets.only(
+              top: 0,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
             color: Theme.of(context).canvasColor.withOpacity(0.9),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -861,43 +952,75 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                   children: [
                     ElevatedButton(
                       style: const ButtonStyle(
-                        backgroundColor: WidgetStatePropertyAll<Color>(Colors.green),
+                        backgroundColor: WidgetStatePropertyAll<Color>(
+                          Colors.green,
+                        ),
                         shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
                           RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(8.0),
+                            ),
                           ),
                         ),
                       ),
                       onPressed: () async {
                         await buildBottomSheetSettings(context, ref);
                       },
-                      child: Text('Tài sản ảnh hưởng', style: const TextStyle(fontSize: 14, color: Colors.white)),
-                    ),
-                    ElevatedButton(
-                      style: const ButtonStyle(
-                        backgroundColor: WidgetStatePropertyAll<Color>(Colors.blueAccent),
-                        shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Icon(Icons.list_outlined, color: Colors.white),
+                          Text(
+                            'Tài sản ảnh hưởng',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                      onPressed: () {},
-                      child: Text('Lưu kết quả', style: const TextStyle(fontSize: 14, color: Colors.white)),
                     ),
+                    // ElevatedButton(
+                    //   style: const ButtonStyle(
+                    //     backgroundColor: WidgetStatePropertyAll<Color>(Colors.blueAccent),
+                    //     shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
+                    //       RoundedRectangleBorder(
+                    //         borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                    //       ),
+                    //     ),
+                    //   ),
+                    //   onPressed: () {},
+                    //   child: Text('Lưu kết quả', style: const TextStyle(fontSize: 14, color: Colors.white)),
+                    // ),
                     ElevatedButton(
                       style: const ButtonStyle(
-                        backgroundColor: WidgetStatePropertyAll<Color>(Colors.red),
+                        backgroundColor: WidgetStatePropertyAll<Color>(
+                          Colors.red,
+                        ),
                         shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
                           RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(8.0),
+                            ),
                           ),
                         ),
                       ),
                       onPressed: () {
                         clearResult(ref);
                       },
-                      child: Text('Xóa', style: const TextStyle(fontSize: 14, color: Colors.white)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Icon(Icons.delete, color: Colors.white),
+                          Text(
+                            'Hủy',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     // Button để toggle editing toolbar
                   ],
@@ -909,6 +1032,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       },
     );
   }
+
   List<DropdownMenuItem<GeometryType>> configureGeometryTypeMenuItems() {
     // Create a list of geometry types to make available for editing.
     final geometryTypes = [
@@ -949,12 +1073,10 @@ class _MapViewWidgetState extends State<MapViewWidget> {
   // Method để clear graphics với ref để update providers
   void clearAllGraphicsWithRef(WidgetRef ref) {
     _graphicsOverlay.graphics.clear();
-    
+
     // Clear both providers
     ref.read(listGeometryProvider.notifier).state = [];
     ref.read(enhancedGeometryDataProvider.notifier).state = [];
-
-    print("Đã xóa tất cả graphics: ${ref.watch(enhancedGeometryDataProvider)}");
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -976,8 +1098,8 @@ class _MapViewWidgetState extends State<MapViewWidget> {
         ),
       );
     }
-  }  // Method to project coordinates using portal geocode service (based on ReactJS web version)
-  
+  } // Method to project coordinates using portal geocode service (based on ReactJS web version)
+
   Future<int> findObjectIdOngPhanPhoi({
     required double x,
     required double y,
@@ -992,12 +1114,8 @@ class _MapViewWidgetState extends State<MapViewWidget> {
     try {
       final token = ref.read(arcgisTokenProvider);
 
-      final geometryPoint = ArcGISPoint(
-        x: x,
-        y: y,
-        spatialReference: inSr,
-      ); 
-      
+      final geometryPoint = ArcGISPoint(x: x, y: y, spatialReference: inSr);
+
       final bufferPolygonForQuery = GeometryEngine.buffer(
         geometry: geometryPoint,
         distance: 1,
@@ -1007,9 +1125,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       print("=================================");
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {
           'outFields': 'OBJECTID',
           'f': 'json',
@@ -1026,9 +1142,8 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final features = data['features'] ?? [];
-        
-        if (features.isNotEmpty) {
 
+        if (features.isNotEmpty) {
           print("=== Found Features ===");
           print("Features: $features");
           print("=======================");
@@ -1048,7 +1163,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
     }
     return -1; // Return a default value if no valid OBJECTID is found
   }
-  
+
   Future<Map<String, dynamic>?> projectPointGeometry(
     String url,
     SpatialReference inputSpatialReference,
@@ -1058,7 +1173,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
   ) async {
     try {
       final token = ref.read(arcgisTokenProvider) ?? "";
-      
+
       // Create form data like the ReactJS version
       final formData = <String, String>{
         'inSR': json.encode(inputSpatialReference.toJson()),
@@ -1073,14 +1188,15 @@ class _MapViewWidgetState extends State<MapViewWidget> {
 
       final response = await http.post(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: formData.entries
-            .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+            .map(
+              (e) =>
+                  '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+            )
             .join('&'),
       );
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         print("=== Projection Response ===");
@@ -1097,6 +1213,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       return null;
     }
   }
+
   // ================ SHOW BOTTOM SHEET TSAH ================ //
   Future<void> buildBottomSheetSettings(BuildContext context, ref) async {
     final map = widget.controller.arcGISMap;
@@ -1166,12 +1283,14 @@ class _MapViewWidgetState extends State<MapViewWidget> {
           final fields = layer.featureTable?.fields ?? [];
 
           final fieldList = fields
-              .map((f) => {
-                    'name': f.name,
-                    'alias': f.alias,
-                    'type': f.type.toString(),
-                    'domain': f.domain,
-                  })
+              .map(
+                (f) => {
+                  'name': f.name,
+                  'alias': f.alias,
+                  'type': f.type.toString(),
+                  'domain': f.domain,
+                },
+              )
               .toList();
 
           if (layer.name == 'Van điều khiển') {
@@ -1189,35 +1308,38 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      isDismissible: true, // Bấm ra ngoài sẽ đóng
-      enableDrag: true, 
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.8,
-        minChildSize: 0.4,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) {
-          return Container(
+      isDismissible: true,
+      enableDrag: true,
+      builder: (context) {
+        return GestureDetector(
+          onTap: () {}, // để không đóng khi bấm vào sheet
+          child: Container(
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            child: Column(
-              children: [
-                Expanded(
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.6,
+              minChildSize: 0.3,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (context, scrollController) {
+                return Expanded(
                   child: buildTraceResultTabs(
                     vanDieuKhienData,
                     dongHoData,
                     vanFields,
                     dhkhFields,
                   ),
-                ),
-              ],
+                );
+              },
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
+
   Widget buildTraceResultTabs(
     List<Map<String, dynamic>> vanDieuKhienData,
     List<Map<String, dynamic>> dongHoData,
@@ -1246,7 +1368,11 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       ),
     );
   }
-  Widget buildDataCards(List<Map<String, dynamic>> data, List<Map<String, dynamic>> fields) {
+
+  Widget buildDataCards(
+    List<Map<String, dynamic>> data,
+    List<Map<String, dynamic>> fields,
+  ) {
     if (data.isEmpty) {
       return const Center(child: Text('Không có dữ liệu'));
     }
@@ -1278,12 +1404,12 @@ class _MapViewWidgetState extends State<MapViewWidget> {
                     children: [
                       Expanded(
                         flex: 3,
-                        child: Text('${getFields(entry.key)}:', style: const TextStyle(fontWeight: FontWeight.w600)),
+                        child: Text(
+                          '${getFields(entry.key)}:',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
                       ),
-                      Expanded(
-                        flex: 5,
-                        child: Text('${entry.value ?? ''}'),
-                      ),
+                      Expanded(flex: 5, child: Text('${entry.value ?? ''}')),
                     ],
                   ),
                 );
@@ -1298,35 +1424,63 @@ class _MapViewWidgetState extends State<MapViewWidget> {
   // =============================END====================================//
 
   // ==================Clear ket qua======================== //
-  void clearResult(ref) {
+  void clearResult(WidgetRef ref) {
     final map = widget.controller.arcGISMap;
     if (map == null) return;
+
+    // 1. Xóa selection trên các layer bản đồ
     for (final layer in map.operationalLayers) {
       if (layer is FeatureLayer) {
         layer.clearSelection();
       }
     }
-    // Clear the graphics overlay
+
+    // 2. Xóa graphics overlay (các đối tượng hiển thị tạm thời)
     _graphicsOverlay.graphics.clear();
-    
-    // Clear the enhanced geometry data provider
-    ref.read(enhancedGeometryDataProvider.notifier).state = <Map<String, dynamic>>[];
-    
-    // Clear the list geometry provider
+
+    if (_geometryEditorIsStarted) {
+      _geometryEditor.stop();
+      setState(() {
+        _geometryEditorIsStarted = false;
+        _selectedGraphic = null;
+      });
+    }
+
+    // 3. Reset dữ liệu geometry nâng cao (đã gắn tool, layer info...)
+    ref.read(enhancedGeometryDataProvider.notifier).state = [];
+
+    // 4. Reset danh sách geometry gốc
     ref.read(listGeometryProvider.notifier).state = [];
 
+    // 5. Reset dữ liệu trace
     ref.read(traceDataProvider.notifier).state = null;
-    
-    // Reset the selected graphic
-    _selectedGraphic = null;
-    
-    // Reset the geometry editor state
+    ref.read(traceHistoryDataProvider.notifier).state = null;
+
+    // 6. Reset tool đang chọn
+    ref.read(activeToolButtonProvider.notifier).state = null;
+    ref.read(activeToolProvider.notifier).state = false;
+
+    // 7. Reset loại thao tác
+    ref.read(operationTypeProvider.notifier).state =
+        OperationType.normalOperation;
+
+    // 8. Reset flag/barrier đang xử lý trace
+    ref.read(handleTraceTypeProvider.notifier).state = null;
+
+    // 9. Reset selected history item và ID đã xử lý
+    ref.read(historyItemSelectedProvider.notifier).state = null;
+    ref.read(lastProcessedHistoryIdProvider.notifier).state = null;
+
+    // 10. Dừng geometry editor nếu đang chạy
     _geometryEditor.stop();
-    
-    // Reset the geometry editor started flag
     _geometryEditorIsStarted = false;
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đã xóa kết quả')),
-    );}
+
+    // 11. Xóa graphic đang chọn (nếu có)
+    _selectedGraphic = null;
+
+    // 12. Hiển thị thông báo
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Đã xóa kết quả')));
+  }
 }
