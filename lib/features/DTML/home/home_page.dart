@@ -1,15 +1,12 @@
+import 'package:arcgis_app_demo/features/DTML/dtml_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/providers/global_providers.dart';
 import 'widgets/map_view.dart';
 import 'home_controller.dart';
 import 'home_provider.dart';
 
 class HomePage extends ConsumerStatefulWidget {
-  final OnLoginCallback? onLogin;
-  final OnLayersReadyCallback? onLayersReady;
-
-  const HomePage({Key? key, this.onLogin, this.onLayersReady})
+  const HomePage({Key? key})
     : super(key: key);
 
   @override
@@ -29,8 +26,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.didChangeDependencies();
     controller.initialize(
       context,
-      onLogin: widget.onLogin,
-      onLayersReady: widget.onLayersReady,
     );
   }
 

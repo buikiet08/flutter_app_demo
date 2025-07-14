@@ -1,3 +1,5 @@
+import 'package:arcgis_app_demo/core/providers/global_providers.dart';
+import 'package:arcgis_app_demo/features/DTML/dtml_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:arcgis_maps/arcgis_maps.dart';
@@ -5,7 +7,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
-import '../../core/providers/global_providers.dart';
 import 'home_provider.dart';
 
 typedef OnLoginCallback = void Function(String username);
@@ -369,7 +370,6 @@ class HomeController implements ArcGISAuthenticationChallengeHandler {
 
   Future<void> logout() async {
     ArcGISEnvironment.authenticationManager.arcGISCredentialStore.removeAll();
-    ref.read(usernameProvider.notifier).state = null;
   }
   
   Future<void> onMapViewReady() async {
@@ -581,7 +581,8 @@ class HomeController implements ArcGISAuthenticationChallengeHandler {
       challenge.continueWithCredential(credential);
     } on ArcGISException catch (_) {
       challenge.continueAndFail();
-    }  }
+    }  
+  }
 
   /// Xử lý trace network analysis sử dụng HTTP requests
   Future<void> executeTraceOperation() async {
