@@ -1081,7 +1081,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Đã xóa tất cả graphics'),
-        duration: Duration(seconds: 2),
+        duration: Duration(seconds: 1),
       ),
     );
   }
@@ -1094,7 +1094,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Đã xóa graphic cuối cùng'),
-          duration: Duration(seconds: 2),
+          duration: Duration(seconds: 1),
         ),
       );
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:arcgis_maps/arcgis_maps.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
@@ -94,7 +95,7 @@ class HomeController implements ArcGISAuthenticationChallengeHandler {
     try {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Đã chọn: $id')));
+      ).showSnackBar(SnackBar(content: Text('Đã chọn: $id'), duration: Duration(seconds: 1)));
 
       // Chỉ gọi fetchFeatures một lần, sau đó xử lý layers
       await fetchFeatures();
@@ -680,6 +681,23 @@ class HomeController implements ArcGISAuthenticationChallengeHandler {
         print('Trace API response: ${response.body}');
         
         final responseData = json.decode(response.body);
+
+        if (
+          responseData['data']['VanAnhHuong']?.length == 0  && 
+          responseData['data']['VanDong']?.length == 0  && 
+          responseData['data']['OngPhanPhoi']?.length == 0  && 
+          responseData['data']['OngNganh'].length == 0  && 
+          responseData['data']['DongHoKhachHang']?.length == 0 
+        ) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không tìm thấy tài sản ảnh hưởng!'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 1),
+            ),
+          );
+          return;
+        }
         await _processTraceResults(responseData['data'] ?? {});
         
         if (context.mounted) {
@@ -687,7 +705,7 @@ class HomeController implements ArcGISAuthenticationChallengeHandler {
             const SnackBar(
               content: Text('Vận hành đã được thực hiện thành công'),
               backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
+              duration: Duration(seconds: 1),
             ),
           );
         }
@@ -751,23 +769,23 @@ class HomeController implements ArcGISAuthenticationChallengeHandler {
 
       // Highlight affected features
       if (vanAnhHuongIds.isNotEmpty) {
-        await _selectFeaturesInLayer("Van điều khiển", vanAnhHuongIds.map((id) => id.toString()).toList());
+        _selectFeaturesInLayer("Van điều khiển", vanAnhHuongIds.map((id) => id.toString()).toList());
       }
 
       if (vanDongIds.isNotEmpty) {
-        await _selectFeaturesInLayer("Van điều khiển", vanDongIds.map((id) => id.toString()).toList());
+        _selectFeaturesInLayer("Van điều khiển", vanDongIds.map((id) => id.toString()).toList());
       }
       
       if (oppIds.isNotEmpty) {
-        await _selectFeaturesInLayer("Ống phân phối", oppIds.map((id) => id.toString()).toList());
+        _selectFeaturesInLayer("Ống phân phối", oppIds.map((id) => id.toString()).toList());
       }
       
       if (onIds.isNotEmpty) {
-        await _selectFeaturesInLayer("Ống ngánh", onIds.map((id) => id.toString()).toList());
+        _selectFeaturesInLayer("Ống ngánh", onIds.map((id) => id.toString()).toList());
       }
 
       if (dhkhIds.isNotEmpty) {
-        await _selectFeaturesInLayer("Đồng hồ khách hàng", dhkhIds.map((id) => id.toString()).toList());
+        _selectFeaturesInLayer("Đồng hồ khách hàng", dhkhIds.map((id) => id.toString()).toList());
       }
 
       resetActiveTool();
@@ -780,7 +798,7 @@ class HomeController implements ArcGISAuthenticationChallengeHandler {
   }
 
   /// Select features in a specific layer by IDs
-  Future<void> _selectFeaturesInLayer(String layerName, List<String> ids) async {
+  void _selectFeaturesInLayer(String layerName, List<String> ids) async {
     final map = mapViewController.arcGISMap;
     if (map == null) return;
     
@@ -856,5 +874,39 @@ class HomeController implements ArcGISAuthenticationChallengeHandler {
     // Clear both providers
     // ref.read(listGeometryProvider.notifier).state = [];
     // ref.read(enhancedGeometryDataProvider.notifier).state = [];
+  }
+
+  Future<void> goToMyLocation() async {
+    try {
+      // 1. Xin quyền
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+
+      // 2. Lấy vị trí hiện tại
+      final position = await Geolocator.getCurrentPosition();
+      print("Mt location ${position.latitude}");
+      print("Mt location ${position.longitude}");
+
+      const double delta = 0.0005; // khoảng 50m
+
+      final envelope = Envelope.fromXY(
+        xMin: position.longitude - delta,
+        yMin: position.latitude - delta,
+        xMax: position.longitude + delta,
+        yMax: position.latitude + delta,
+        spatialReference: SpatialReference.wgs84,
+      );
+
+      await mapViewController.setViewpointGeometry(
+        envelope,
+        paddingInDiPs: 30,
+      );
+
+    } catch (e) {
+      print('Lỗi khi lấy vị trí: $e');
+    }
   }
 }

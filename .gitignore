@@ -82,3 +82,6 @@ firebase_app_id_file.json
 # Test coverage
 coverage/
 
+
+# Miscellaneous
+arcgis_maps_core

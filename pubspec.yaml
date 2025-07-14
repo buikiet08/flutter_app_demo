@@ -39,6 +39,7 @@ dependencies:
   webview_flutter_android: ^3.14.0
   arcgis_maps: ^200.7.0+4560
   flutter_riverpod: ^2.5.1
+  geolocator: ^13.0.4
 
 dev_dependencies:
   flutter_test:

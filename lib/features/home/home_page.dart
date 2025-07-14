@@ -86,7 +86,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
-                Row(
+                Column(
                   children: <Widget>[
                     Consumer(
                       builder: (context, ref, _) {
@@ -110,6 +110,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                         );
                       },
                     ),
+                    FloatingActionButton.small(
+                      child: const Icon(Icons.my_location, size: 18, color: Colors.black54),
+                      backgroundColor: Colors.white70,
+                      onPressed: () async {
+                        await controller.goToMyLocation();
+                      },
+                    )
                   ],
                 ),
               ],
