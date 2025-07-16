@@ -40,6 +40,7 @@ dependencies:
   arcgis_maps: ^200.7.0+4560
   flutter_riverpod: ^2.5.1
   geolocator: ^13.0.4
+  flutter_secure_storage: ^9.0.0
 
 dev_dependencies:
   flutter_test:
@@ -64,8 +65,16 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/flag.png
-    - assets/barrier.png
+    - assets/images/flag.png
+    - assets/images/barrier.png
+    - assets/images/logo.png
+    - assets/images/logo_login.png
+    - assets/images/splash_screen.png
+    - assets/images/background_profile.png
+  # list app
+    - assets/images/app/qlsc.png
+    - assets/images/app/dtml.png
+    - assets/images/app/qlts.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

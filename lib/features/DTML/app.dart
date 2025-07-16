@@ -1,7 +1,10 @@
+import 'package:arcgis_app_demo/common/confirm_exit_dialog.dart';
 import 'package:arcgis_app_demo/features/DTML/dtml_provider.dart';
 import 'package:arcgis_app_demo/features/DTML/home/home_page.dart';
-import 'package:arcgis_app_demo/features/DTML/home/home_provider.dart';
 import 'package:arcgis_app_demo/features/DTML/history/history_page.dart';
+import 'package:arcgis_app_demo/router/router.dart';
+import 'package:arcgis_app_demo/shared/helper.dart';
+import 'package:arcgis_app_demo/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,13 +14,7 @@ class DTML_App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ArcGIS App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigoAccent),
-      ),
-      home: const MainTabScreen(),
-    );
+    return const MainTabScreen(); 
   }
 }
 
@@ -41,32 +38,39 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
     });
   }
 
-  void _logout() async {
-    ref.read(logoutProvider)();
-    setState(() {
-      _selectedIndex = 0;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final activeTool = ref.watch(activeToolProvider);
 
+    // ignore: deprecated_member_use
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blueAccent,
+        automaticallyImplyLeading: false,
+        backgroundColor: AppColors.primary,
+        // leading: IconButton(
+        //   icon: const Icon(Icons.menu, color: AppColors.white),
+        //   onPressed: () {
+        //     ScaffoldMessenger.of(context).showSnackBar(
+        //       const SnackBar(content: Text('Menu button pressed')),
+        //     );
+        //   },
+        // ),
         titleTextStyle: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Colors.white,
+          color: AppColors.white,
         ),
-        title: Text('Điều tiết mạng lưới', style: TextStyle(fontSize: 22),),
+        title: const Text('Điều tiết mạng lưới', style: TextStyle(fontSize: 22)),
         actions: [
           IconButton(
-            color: Colors.white, // White color for the icon
+            color: AppColors.white,
             icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: () => Navigator.pushNamed(context, '/launcher'),
+            onPressed: () async {
+              final confirm = await showConfirmExitDialog(context);
+              if (confirm) {
+                navigateAndClearStack(context, AppRouter.launcherScreen);
+              }
+            }
           ),
         ],
       ),
@@ -77,37 +81,21 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
               destinations: const <NavigationDestination>[
                 NavigationDestination(
                   icon: Icon(Icons.map_outlined, size: 24),
-                  selectedIcon: Icon(Icons.map_outlined, color: Colors.white),
+                  selectedIcon: Icon(Icons.map_outlined, color: AppColors.white),
                   label: 'Trang chủ',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.history, size: 24),
                   selectedIcon: Icon(
                     Icons.history_outlined,
-                    color: Colors.white,
+                    color: AppColors.white,
                   ),
                   label: 'Giám sát',
                 ),
-                // NavigationDestination(
-                //   icon: Icon(Icons.chat_rounded, size: 24),
-                //   selectedIcon: Icon(
-                //     Icons.chat_rounded,
-                //     color: Colors.white,
-                //   ),
-                //   label: 'Báo cáo',
-                // ),
-                // NavigationDestination(
-                //   icon: Icon(Icons.settings_outlined, size: 24),
-                //   selectedIcon: Icon(
-                //     Icons.settings_outlined,
-                //     color: Colors.white,
-                //   ),
-                //   label: 'Cài đặt',
-                // ),
               ],
               selectedIndex: _selectedIndex,
               onDestinationSelected: _onItemTapped,
-              indicatorColor: Colors.blueAccent,
+              indicatorColor: AppColors.primary,
               labelPadding: const EdgeInsets.symmetric(
                 horizontal: 0.0,
                 vertical: 0.0,
@@ -117,7 +105,7 @@ class _MainTabScreenState extends ConsumerState<MainTabScreen> {
               ),
               height: 60,
             ),
-    );
+      );
   }
 }
 
@@ -179,7 +167,7 @@ class _DemoBottomAppBar extends ConsumerWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Vui lòng chấm điểm trước khi thực hiện vận hành'),
-                          backgroundColor: Colors.orange,
+                          backgroundColor: AppColors.warning,
                         ),
                       );
                       return;
@@ -210,10 +198,10 @@ class _DemoBottomAppBar extends ConsumerWidget {
         ElevatedButton(
           style: ButtonStyle(
             backgroundColor: WidgetStatePropertyAll<Color>(
-              isActive ? Colors.blueAccent : Colors.white,
+              isActive ? AppColors.primary : AppColors.white,
             ),
             foregroundColor: WidgetStatePropertyAll<Color>(
-              isActive ? Colors.white : Colors.blueAccent,
+              isActive ? AppColors.white : AppColors.primary,
             ),
             shape: const WidgetStatePropertyAll<RoundedRectangleBorder>(
               RoundedRectangleBorder(
@@ -256,10 +244,10 @@ class _DemoBottomAppBar extends ConsumerWidget {
     child: ElevatedButton(
         style: ButtonStyle(
           backgroundColor: WidgetStatePropertyAll<Color>(
-            isActive ? Colors.blueAccent : Colors.white,
+            isActive ? AppColors.primary : AppColors.white,
           ),
           foregroundColor: WidgetStatePropertyAll<Color>(
-            isActive ? Colors.white : Colors.blueAccent,
+            isActive ? AppColors.white : AppColors.primary,
           ),
           shape: const WidgetStatePropertyAll<RoundedRectangleBorder>(
             RoundedRectangleBorder(

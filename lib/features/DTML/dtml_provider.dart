@@ -13,16 +13,16 @@ final historyItemSelectedProvider = StateProvider<Map<String, dynamic>?>((ref) =
 // Provider to track the last processed history item ID to prevent duplicate processing
 final lastProcessedHistoryIdProvider = StateProvider<String?>((ref) => null);
 
-// Helper provider to get the selected history item's ID
-final selectedHistoryItemIdProvider = Provider<String?>((ref) {
-  final selectedItem = ref.watch(historyItemSelectedProvider);
-  return selectedItem?['IDVHV'];
-});
+// // Helper provider to get the selected history item's ID
+// final selectedHistoryItemIdProvider = Provider<String?>((ref) {
+//   final selectedItem = ref.watch(historyItemSelectedProvider);
+//   return selectedItem?['IDVHV'];
+// });
 
-// Helper provider to check if any history item is selected
-final hasSelectedHistoryItemProvider = Provider<bool>((ref) {
-  final selectedItem = ref.watch(historyItemSelectedProvider);  return selectedItem != null;
-});
+// // Helper provider to check if any history item is selected
+// final hasSelectedHistoryItemProvider = Provider<bool>((ref) {
+//   final selectedItem = ref.watch(historyItemSelectedProvider);  return selectedItem != null;
+// });
 
 // Active tool providers
 final activeToolProvider = StateProvider<bool?>((ref) => false);
@@ -64,3 +64,5 @@ final enhancedGeometryDataProvider = StateProvider<List<Map<String, dynamic>>>(
 final handleTraceTypeProvider = StateProvider<ToolType?>((ref) => null);
 final traceDataProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
 final traceHistoryDataProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
+
+final activeDMAProvider = StateProvider<String?>((ref) => null);

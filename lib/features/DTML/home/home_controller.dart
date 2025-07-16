@@ -373,12 +373,20 @@ class HomeController implements ArcGISAuthenticationChallengeHandler {
   }
   
   Future<void> onMapViewReady() async {
-    final map = ArcGISMap.withItem(
-      PortalItem.withPortalAndItemId(
-        portal: Portal(portalUri, connection: PortalConnection.authenticated),
-        itemId: webMapId,
-      ),
-    );
+    final existingMap = ref.read(webMapProvider.notifier).getMap('DTML');
+
+    ArcGISMap map;
+    if (existingMap != null) {
+      map = existingMap;
+    } else {
+      map = ArcGISMap.withItem(
+        PortalItem.withPortalAndItemId(
+          portal: Portal(portalUri, connection: PortalConnection.authenticated),
+          itemId: webMapId,
+        ),
+      );
+      ref.read(webMapProvider.notifier).setMap('DTML', map);
+    }
 
     // Set feature tiling mode để hỗ trợ snapping
     // Snapping được sử dụng để duy trì tính toàn vẹn dữ liệu giữa các nguồn dữ liệu khác nhau khi chỉnh sửa,

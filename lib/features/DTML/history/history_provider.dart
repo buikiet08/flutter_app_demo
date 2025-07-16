@@ -1,19 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // History state providers
-final historyFeaturesProvider = StateProvider<List<dynamic>>((ref) => []);
+// final historyFeaturesProvider = StateProvider<List<dynamic>>((ref) => []);
 
-final historyLoadingProvider = StateProvider<bool>((ref) => false);
+// final historyLoadingProvider = StateProvider<bool>((ref) => false);
 
-final historyErrorProvider = StateProvider<String?>((ref) => null);
+// final historyErrorProvider = StateProvider<String?>((ref) => null);
 
-final historyPageProvider = StateProvider<int>((ref) => 0);
+// final historyPageProvider = StateProvider<int>((ref) => 0);
 
-final historyPageSizeProvider = StateProvider<int>((ref) => 10);
+// final historyPageSizeProvider = StateProvider<int>((ref) => 10);
 
-final historyHasFetchedProvider = StateProvider<bool>((ref) => false);
+// final historyHasFetchedProvider = StateProvider<bool>((ref) => false);
 
-final selectedHistoryItemIdProvider = StateProvider<String?>((ref) => null);
 
 // History state model
 class HistoryState {
@@ -28,7 +27,7 @@ class HistoryState {
 
   const HistoryState({
     this.features = const [],
-    this.fields = null,
+    this.fields,
     this.loading = false,
     this.error,
     this.page = 0,
@@ -76,8 +75,8 @@ class HistoryStateNotifier extends StateNotifier<HistoryState> {
     state = state.copyWith(fields: fields ?? []);
   }
 
-  void setLoading(bool loading) {
-    state = state.copyWith(loading: loading);
+  void setLoading(bool? loading) {
+    state = state.copyWith(loading: loading ?? false);
   }
 
   void setError(String? error) {

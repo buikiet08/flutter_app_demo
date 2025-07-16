@@ -30,7 +30,12 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _controller.initialize(context);
-    _controller.tryFetchWhenTokenReady();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _controller.tryFetchWhenTokenReady();
+      }
+    });
   }
 
   @override
